@@ -5,6 +5,8 @@
 
 #include "hash.h"
 
+#define SIGN_COMPARISION(a, b) a > b ? 1 : -1
+
 int h_1(int key)
 {
   return key % M;
@@ -38,23 +40,24 @@ void insert(int key, int t1[], int t2[])
   }
 }
 
-// function to compare keys
+// function to compare keys for sort
 int comp_func(const void *a, const void *b)
 {
-  char *a_copy = strdup(*(char **)a);
+  char *a_copy = strdup(*(char **)a); // don't modify original string
   char *b_copy = strdup(*(char **)b);
 
-  int a_key = atoi(strtok(a_copy, ","));
+  int a_key = atoi(strtok(a_copy, ",")); // get first field
   int b_key = atoi(strtok(b_copy, ","));
 
   free(a_copy);
   free(b_copy);
 
-  return a_key > b_key ? 1 : -1;
+  return SIGN_COMPARISION(a_key, b_key);
 }
 
 void print_table(int t1[], int t2[])
 {
+  int result_count = 0;
 
   char **formatted_entries = malloc(sizeof(char *) * M);
   memset(formatted_entries, 0, sizeof(char *) * M);
@@ -65,39 +68,25 @@ void print_table(int t1[], int t2[])
     exit(1);
   }
 
-  int result_count = 0;
-
   for (int i = 0; i < M; i++)
   {
-    if (t1[i] != REMOVED && t1[i] != AVALIABLE)
+    if ((t1[i] == AVALIABLE || t1[i] == REMOVED) && (t2[i] == AVALIABLE || t2[i] == REMOVED))
+      continue;
+
+    char *formatted_entry = malloc(sizeof(char) * MAX_BUFFER_PER_LINE);
+
+    if (formatted_entry == NULL)
     {
-      char *formatted_entry = malloc(sizeof(char) * MAX);
-
-      if (formatted_entry == NULL)
-      {
-        printf("Error allocating memory");
-        exit(1);
-      }
-
-      snprintf(formatted_entry, MAX, "%d,T1,%d", t1[i], i);
-      formatted_entries[result_count] = formatted_entry;
-      result_count++;
+      printf("Error allocating memory");
+      exit(1);
     }
 
-    if (t2[i] != REMOVED && t2[i] != AVALIABLE)
-    {
-      char *formatted_entry = malloc(sizeof(char) * MAX);
+    if (t1[i] != AVALIABLE && t1[i] != REMOVED)
+      snprintf(formatted_entry, MAX_BUFFER_PER_LINE, "%d,T1,%d", t1[i], i);
+    else
+      snprintf(formatted_entry, MAX_BUFFER_PER_LINE, "%d,T2,%d", t2[i], i);
 
-      if (formatted_entry == NULL)
-      {
-        printf("Error allocating memory");
-        exit(1);
-      }
-
-      snprintf(formatted_entry, MAX, "%d,T2,%d", t2[i], i);
-      formatted_entries[result_count] = formatted_entry;
-      result_count++;
-    }
+    formatted_entries[result_count++] = formatted_entry;
   }
 
   // sort by first field
@@ -126,6 +115,7 @@ void remove_item(int key, int t1[], int t2[])
 int find(int key, int t1[], int t2[])
 {
   int primary_hash_pos = h_1(key);
+  int secondary_hash_pos = h_2(key);
 
   if (t1[primary_hash_pos] == AVALIABLE)
     return AVALIABLE;
@@ -133,8 +123,8 @@ int find(int key, int t1[], int t2[])
   if (t1[primary_hash_pos] == key)
     return primary_hash_pos;
 
-  if (t2[h_2(key)] == key)
-    return h_2(key);
+  if (t2[secondary_hash_pos] == key)
+    return secondary_hash_pos;
 
   return AVALIABLE;
 }

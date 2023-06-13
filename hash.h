@@ -1,4 +1,4 @@
-#define MAX 40
+#define MAX_BUFFER_PER_LINE 40
 #define M 11
 
 enum
